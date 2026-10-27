@@ -1,5 +1,3 @@
-# BSIS-3B Blood Bank Laravel Project
-
 This is a complete Laravel 13 application with the blood-bank assignment implemented in the standard Laravel project structure.
 
 ## Requirements
@@ -62,4 +60,4 @@ Each table stores attributes about its own key. Donor and hospital details are r
 | POST | `/api/distribution-logs` | Validate and distribute a bag |
 | PUT/PATCH | `/api/distribution-logs/{distributionLog}` | Correct the processing fee |
 
-The example Form Requests currently authorize all callers. Add authentication and policies before exposing these endpoints in production.
+
