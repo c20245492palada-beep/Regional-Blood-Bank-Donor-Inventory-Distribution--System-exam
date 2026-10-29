@@ -4,6 +4,9 @@ use App\Http\Controllers\BloodBagController;
 use App\Http\Controllers\DistributionLogController;
 use Illuminate\Support\Facades\Route;
 
+
+//===================== NGAA MY API KA? ===============================
+//=========== PARA SA DIIN NI?=============================
 Route::get('blood-bags', [BloodBagController::class, 'index']);
 Route::get('blood-bags/create', [BloodBagController::class, 'create']);
 Route::post('blood-bags', [BloodBagController::class, 'store']);
