@@ -57,17 +57,18 @@ class AuthenticationAndAppointmentTest extends TestCase
 
     public function test_guest_cannot_open_dashboard_or_create_appointments(): void
     {
+        $appointment = Appointment::factory()->create();
+
         $this->get(route('dashboard'))->assertRedirect(route('login'));
         $this->post(route('appointments.store'), [
             'service' => 'screening',
             'appointment_date' => today()->addDay()->toDateString(),
             'payment_method' => 'Cash',
         ])->assertRedirect(route('login'));
-
-        $appointment = Appointment::factory()->create();
-
         $this->post(route('appointments.cancel', $appointment))
             ->assertRedirect(route('login'));
+
+        $this->assertModelExists($appointment);
     }
 
     public function test_authenticated_user_can_book_an_appointment_with_server_calculated_fee(): void

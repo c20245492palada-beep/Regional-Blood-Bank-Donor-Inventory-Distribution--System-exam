@@ -43,7 +43,9 @@ class AppointmentController extends Controller
 
     public function cancel(Request $request, Appointment $appointment): RedirectResponse
     {
-        abort_unless($appointment->user_id === (int) $request->user()->getAuthIdentifier(), 404);
+        $appointment = $request->user()->appointments()
+            ->whereKey($appointment->getKey())
+            ->firstOrFail();
 
         if ($appointment->status !== 'Pending') {
             return redirect()

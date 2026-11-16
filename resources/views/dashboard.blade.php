@@ -819,7 +819,6 @@
                 <div class="panel-header">
                     <h2>Available stock</h2>
                     <span class="panel-tag">By group</span>
-                    </main>
                 </div>
 
                 <div class="stock-list">
@@ -840,6 +839,7 @@
                 </div>
             </aside>
         </section>
+        </main>
     </div>
 
     <script>
