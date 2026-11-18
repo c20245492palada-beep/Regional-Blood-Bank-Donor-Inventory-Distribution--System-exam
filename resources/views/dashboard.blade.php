@@ -590,6 +590,10 @@
                     <span class="sidebar-icon" aria-hidden="true">◈</span>
                     <span>Blood stock</span>
                 </a>
+                <a class="sidebar-link" href="{{ route('settings.edit') }}">
+                    <span class="sidebar-icon" aria-hidden="true">⚙</span>
+                    <span>Settings</span>
+                </a>
             </nav>
         </aside>
 
@@ -617,6 +621,11 @@
         @endif
         @if (session('error'))
             <div class="flash-message error" role="alert">{{ session('error') }}</div>
+        @endif
+        @if (! auth()->user()->phone_verified_at)
+            <div class="flash-message" role="status">
+                Verify your mobile number in <a href="{{ route('settings.edit') }}">Account Settings</a> to enable password recovery by SMS.
+            </div>
         @endif
 
         <section class="booking-panel panel" id="appointments" style="margin-bottom: 24px;">

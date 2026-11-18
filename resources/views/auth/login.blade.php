@@ -227,6 +227,10 @@
                 <h1>Welcome Back !</h1>
                 <p class="subtitle">Login to your Account</p>
 
+                @if (session('status'))
+                    <div class="form-errors" role="status">{{ session('status') }}</div>
+                @endif
+
                 @if ($errors->any())
                     <div class="form-errors" role="alert">
                         @foreach ($errors->all() as $error)
@@ -253,7 +257,7 @@
                             <input type="checkbox" name="remember" value="1" />
                             Remember me
                         </label>
-                        <a class="forgot" href="#">Forgot Password?</a>
+                        <a class="forgot" href="{{ route('password.request') }}">Forgot Password?</a>
                     </div>
 
                     <button class="login-btn" type="submit">Login</button>

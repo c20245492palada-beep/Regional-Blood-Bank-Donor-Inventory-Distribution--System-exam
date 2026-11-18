@@ -174,6 +174,11 @@
                     </div>
 
                     <div class="input-group">
+                        <label for="phone_number">Mobile Number (09XXXXXXXXX or +639XXXXXXXXX)</label>
+                        <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="09302324013" autocomplete="tel" maxlength="13" pattern="(?:\+639[0-9]{9}|09[0-9]{9})" required />
+                    </div>
+
+                    <div class="input-group">
                         <label for="password">Password</label>
                         <input id="password" type="password" name="password" placeholder="Password" autocomplete="new-password" required />
                     </div>
