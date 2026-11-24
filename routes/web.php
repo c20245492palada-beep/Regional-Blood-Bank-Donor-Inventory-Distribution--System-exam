@@ -19,7 +19,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('password.email');
-    Route::get('/reset-password', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('/reset-password', [NewPasswordController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('password.update');
@@ -32,12 +32,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/settings', [AccountSettingsController::class, 'edit'])->name('settings.edit');
     Route::patch('/settings/profile', [AccountSettingsController::class, 'updateProfile'])->name('settings.profile.update');
-    Route::post('/settings/phone/send-code', [AccountSettingsController::class, 'sendPhoneVerificationCode'])
-        ->middleware('throttle:3,1')
-        ->name('settings.phone.send-code');
-    Route::post('/settings/phone/verify', [AccountSettingsController::class, 'verifyPhoneNumber'])
-        ->middleware('throttle:10,1')
-        ->name('settings.phone.verify');
     Route::put('/settings/password', [AccountSettingsController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
     Route::post('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');

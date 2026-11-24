@@ -63,7 +63,7 @@
     <body>
         <main class="reset-shell">
             <h1>Reset Password</h1>
-            <p class="subtitle">Enter the mobile number and six-digit code sent to your phone.</p>
+            <p class="subtitle">Choose a new password for your account.</p>
 
             @if ($errors->any())
                 <div class="form-message" role="alert">
@@ -75,15 +75,14 @@
 
             <form method="POST" action="{{ route('password.update') }}">
                 @csrf
-                <label for="phone_number">Mobile Number</label>
-                <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" autocomplete="tel" maxlength="13" pattern="(?:\+639[0-9]{9}|09[0-9]{9})" required>
-                <label for="code">Password Reset Code</label>
-                <input id="code" type="text" name="code" value="{{ old('code') }}" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+                <input type="hidden" name="token" value="{{ $token }}">
+                <label for="email">Email Address</label>
+                <input id="email" type="email" name="email" value="{{ old('email', $email) }}" autocomplete="email" required>
                 <label for="password">New Password</label>
                 <input id="password" type="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" required>
                 <label for="password_confirmation">Confirm New Password</label>
                 <input id="password_confirmation" type="password" name="password_confirmation" placeholder="Confirm New Password" autocomplete="new-password" required>
-                <button type="submit">Change Password</button>
+                <button type="submit">Reset Password</button>
             </form>
 
             <a href="{{ route('login') }}">Back to Login</a>

@@ -133,7 +133,7 @@
             <header class="settings-header">
                 <div>
                     <h1>Account Settings</h1>
-                    <p>Manage your profile, phone verification, and password.</p>
+                    <p>Manage your profile and password.</p>
                 </div>
                 <a class="back-link" href="{{ route('dashboard') }}">Back to dashboard</a>
             </header>
@@ -153,7 +153,7 @@
             <section class="settings-panel" aria-labelledby="profile-heading">
                 <div>
                     <h2 id="profile-heading">Profile information</h2>
-                    <p class="panel-description">Change the name and email address on your account.</p>
+                    <p class="panel-description">Change the name, email address, and mobile contact number on your account.</p>
                 </div>
 
                 <form class="settings-form" method="POST" action="{{ route('settings.profile.update') }}">
@@ -171,46 +171,12 @@
                     </label>
 
                     <label for="phone_number">
-                        Mobile number for password recovery (09XXXXXXXXX or +639XXXXXXXXX)
-                        <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number', $user->phone_number) }}" autocomplete="tel" maxlength="13" pattern="(?:\+639[0-9]{9}|09[0-9]{9})">
-                    </label>
-
-                    <label for="profile_current_password">
-                        Current password (required only when changing the mobile number)
-                        <input id="profile_current_password" type="password" name="current_password" autocomplete="current-password">
+                        Mobile contact number (09XXXXXXXXX or +639XXXXXXXXX)
+                        <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number', $user->phone_number) }}" autocomplete="tel" maxlength="13" pattern="^(\+639[0-9]{9}|09[0-9]{9})$" title="Enter a Philippine mobile number as 09XXXXXXXXX or +639XXXXXXXXX">
                     </label>
 
                     <button class="save-button" type="submit">Save profile</button>
                 </form>
-            </section>
-
-            <section class="settings-panel" aria-labelledby="phone-heading">
-                <div>
-                    <h2 id="phone-heading">Phone verification</h2>
-                    <p class="panel-description">
-                        @if ($user->phone_verified_at)
-                            Your mobile number is verified and can be used for password recovery.
-                        @else
-                            Save your mobile number above, then verify it to enable password recovery by SMS.
-                        @endif
-                    </p>
-                </div>
-
-                @if ($user->phone_number && ! $user->phone_verified_at)
-                    <form class="settings-form" method="POST" action="{{ route('settings.phone.send-code') }}">
-                        @csrf
-                        <button class="save-button" type="submit">Send verification code</button>
-                    </form>
-
-                    <form class="settings-form" method="POST" action="{{ route('settings.phone.verify') }}">
-                        @csrf
-                        <label for="code">
-                            Six-digit verification code
-                            <input id="code" type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
-                        </label>
-                        <button class="save-button" type="submit">Verify phone</button>
-                    </form>
-                @endif
             </section>
 
             <section class="settings-panel" aria-labelledby="password-heading">

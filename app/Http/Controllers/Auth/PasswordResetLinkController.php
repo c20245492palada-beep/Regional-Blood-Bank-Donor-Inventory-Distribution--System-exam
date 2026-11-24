@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Services\PhoneVerificationService;
-use App\Support\PhilippinePhoneNumber;
+use App\Http\Requests\SendPasswordResetLinkRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
 class PasswordResetLinkController extends Controller
@@ -17,38 +15,21 @@ class PasswordResetLinkController extends Controller
         return view('auth.forgot-password');
     }
 
-    public function store(Request $request, PhoneVerificationService $codes): RedirectResponse
+    public function store(SendPasswordResetLinkRequest $request): RedirectResponse
     {
-        $phoneNumber = $request->input('phone_number');
+        $validated = $request->validated();
 
-        if (is_string($phoneNumber)) {
-            $request->merge([
-                'phone_number' => PhilippinePhoneNumber::normalize($phoneNumber),
+        $status = Password::sendResetLink($validated);
+
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withInput($request->only('email'))->withErrors([
+                'email' => __($status),
             ]);
-        }
-
-        $validated = $request->validate([
-            'phone_number' => ['required', 'regex:/^\+639\d{9}$/'],
-        ]);
-
-        if (! $codes->isConfigured()) {
-            return back()->withErrors([
-                'phone_number' => 'SMS password recovery is not configured. Set SEMAPHORE_API_KEY before requesting a code.',
-            ]);
-        }
-
-        $user = User::query()
-            ->where('phone_number', $validated['phone_number'])
-            ->whereNotNull('phone_verified_at')
-            ->first();
-
-        if ($user !== null) {
-            $codes->sendPasswordResetCode($user);
         }
 
         return redirect()->route('password.request')->with(
             'status',
-            'If this number is registered and verified, a password reset code will be sent by SMS.',
+            'If an account exists for that email address, a password reset link will be sent.',
         );
     }
 }

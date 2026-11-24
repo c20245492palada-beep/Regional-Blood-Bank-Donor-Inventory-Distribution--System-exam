@@ -622,12 +622,6 @@
         @if (session('error'))
             <div class="flash-message error" role="alert">{{ session('error') }}</div>
         @endif
-        @if (! auth()->user()->phone_verified_at)
-            <div class="flash-message" role="status">
-                Verify your mobile number in <a href="{{ route('settings.edit') }}">Account Settings</a> to enable password recovery by SMS.
-            </div>
-        @endif
-
         <section class="booking-panel panel" id="appointments" style="margin-bottom: 24px;">
             <div class="panel-header">
                 <h2>Book an appointment</h2>
@@ -649,10 +643,9 @@
                         <label>
                             <span>Clinic service</span>
                             <select name="service" id="service">
-                                <option value="screening">Blood donation screening</option>
-                                <option value="blood-typing">Blood typing & checkup</option>
-                                <option value="plasma">Plasma donation</option>
-                                <option value="consultation">Doctor consultation</option>
+                                @foreach ($appointmentServices as $serviceKey => $service)
+                                    <option value="{{ $serviceKey }}" data-fee="{{ $service['fee'] }}">{{ $service['name'] }}</option>
+                                @endforeach
                             </select>
                         </label>
 
@@ -664,15 +657,15 @@
                         <label>
                             <span>Payment method at the clinic</span>
                             <select name="payment_method" required>
-                                <option value="Cash">Cash</option>
-                                <option value="GCash">GCash at clinic</option>
-                                <option value="Card">Card at clinic</option>
+                                @foreach ($paymentMethods as $paymentMethod => $label)
+                                    <option value="{{ $paymentMethod }}">{{ $label }}</option>
+                                @endforeach
                             </select>
                         </label>
 
                         <div class="fee-box">
                             <span>Estimated fee</span>
-                            <strong id="fee-display">₱500.00</strong>
+                            <strong id="fee-display">₱{{ number_format(array_values($appointmentServices)[0]['fee'], 2) }}</strong>
                         </div>
                     </div>
 
@@ -734,11 +727,11 @@
         <section class="stats-grid" id="health-indicators" aria-label="Key health indicators">
             <article class="stat-card">
                 <div class="stat-title">
-                    <span>Donors</span>
+                    <span>Accounts</span>
                     <span class="stat-icon">👥</span>
                 </div>
-                <p class="stat-value">{{ $stats['donors'] }}</p>
-                <div class="stat-delta">Active registered donors</div>
+                <p class="stat-value">{{ $stats['users'] }}</p>
+                <div class="stat-delta">Registered user accounts</div>
             </article>
 
             <article class="stat-card">
@@ -852,20 +845,13 @@
     </div>
 
     <script>
-        const feeMap = {
-            screening: 500,
-            'blood-typing': 800,
-            plasma: 1200,
-            consultation: 1500,
-        };
-
         const serviceSelect = document.getElementById('service');
         const feeDisplay = document.getElementById('fee-display');
 
         if (serviceSelect && feeDisplay) {
             const updateFee = () => {
-                const selected = serviceSelect.value;
-                const amount = feeMap[selected] ?? 0;
+                const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+                const amount = selectedOption ? selectedOption.dataset.fee : 0;
                 feeDisplay.textContent = '₱' + Number(amount).toLocaleString('en-PH', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,

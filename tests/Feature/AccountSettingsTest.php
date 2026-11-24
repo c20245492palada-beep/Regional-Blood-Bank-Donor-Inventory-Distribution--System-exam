@@ -4,9 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AccountSettingsTest extends TestCase
@@ -23,8 +21,9 @@ class AccountSettingsTest extends TestCase
         $this->get(route('settings.edit'))
             ->assertOk()
             ->assertSee('Profile information')
-            ->assertSee('Phone verification')
-            ->assertSee('pattern="(?:\+639[0-9]{9}|09[0-9]{9})"', false)
+            ->assertDontSee('Phone verification')
+            ->assertSee('pattern="^(\+639[0-9]{9}|09[0-9]{9})$"', false)
+            ->assertDontSee('required only when changing the mobile number')
             ->assertSee('Change password');
     }
 
@@ -45,7 +44,6 @@ class AccountSettingsTest extends TestCase
                 'name' => 'Updated Name',
                 'email' => 'updated@example.com',
                 'phone_number' => '09302324013',
-                'current_password' => 'password',
             ])
             ->assertRedirect(route('settings.edit'))
             ->assertSessionHas('status', 'Account details updated.');
@@ -56,7 +54,6 @@ class AccountSettingsTest extends TestCase
             'email' => 'updated@example.com',
             'phone_number' => '+639302324013',
             'email_verified_at' => null,
-            'phone_verified_at' => null,
         ]);
         $this->assertDatabaseHas('users', [
             'id' => $otherUser->id,
@@ -106,11 +103,10 @@ class AccountSettingsTest extends TestCase
         $this->assertSame('+639171234567', $user->fresh()->phone_number);
     }
 
-    public function test_changing_a_phone_number_clears_its_verified_status(): void
+    public function test_user_can_change_their_mobile_contact_number(): void
     {
         $user = User::factory()->create([
             'phone_number' => '+639171234567',
-            'phone_verified_at' => now(),
         ]);
 
         $this->actingAs($user)
@@ -118,18 +114,16 @@ class AccountSettingsTest extends TestCase
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone_number' => '+639181234567',
-                'current_password' => 'password',
             ])
             ->assertRedirect(route('settings.edit'));
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'phone_number' => '+639181234567',
-            'phone_verified_at' => null,
         ]);
     }
 
-    public function test_changing_a_phone_number_requires_the_current_password(): void
+    public function test_changing_a_phone_number_does_not_require_the_current_password(): void
     {
         $user = User::factory()->create([
             'phone_number' => null,
@@ -141,52 +135,10 @@ class AccountSettingsTest extends TestCase
                 'email' => $user->email,
                 'phone_number' => '09302324013',
             ])
-            ->assertSessionHasErrors('current_password');
-
-        $this->assertNull($user->fresh()->phone_number);
-    }
-
-    public function test_user_can_verify_their_phone_with_a_valid_sms_code(): void
-    {
-        $user = User::factory()->create([
-            'phone_number' => '+639171234567',
-            'phone_verified_at' => null,
-        ]);
-        config(['services.semaphore.key' => 'test-semaphore-key']);
-        Http::fake([
-            'https://api.semaphore.co/api/v4/messages' => Http::response([['status' => 'Queued']], 200),
-        ]);
-
-        $this->actingAs($user)
-            ->post(route('settings.phone.send-code'))
             ->assertRedirect(route('settings.edit'))
-            ->assertSessionHas('status', 'A verification code was sent to your phone.');
+            ->assertSessionHas('status', 'Account details updated.');
 
-        $sentCode = null;
-
-        Http::assertSent(function (HttpRequest $request) use (&$sentCode): bool {
-            preg_match('/phone verification code is (\d{6})/', $request['message'], $matches);
-            $sentCode = $matches[1] ?? null;
-
-            return $request->url() === 'https://api.semaphore.co/api/v4/messages' && $sentCode !== null;
-        });
-
-        $this->from(route('settings.edit'))
-            ->post(route('settings.phone.verify'), ['code' => '000000'])
-            ->assertRedirect(route('settings.edit'))
-            ->assertSessionHasErrors('code');
-
-        $this->assertNull($user->fresh()->phone_verified_at);
-
-        $this->post(route('settings.phone.verify'), ['code' => $sentCode])
-            ->assertRedirect(route('settings.edit'))
-            ->assertSessionHas('status', 'Phone number verified for password recovery.');
-
-        $this->assertNotNull($user->fresh()->phone_verified_at);
-        $this->assertDatabaseMissing('phone_verification_codes', [
-            'user_id' => $user->id,
-            'purpose' => 'phone_verification',
-        ]);
+        $this->assertSame('+639302324013', $user->fresh()->phone_number);
     }
 
     public function test_authenticated_user_can_change_password_with_their_current_password(): void

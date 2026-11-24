@@ -2,32 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AppointmentController extends Controller
 {
-    private const SERVICES = [
-        'screening' => ['name' => 'Blood donation screening', 'fee' => 500],
-        'blood-typing' => ['name' => 'Blood typing & checkup', 'fee' => 800],
-        'plasma' => ['name' => 'Plasma donation', 'fee' => 1200],
-        'consultation' => ['name' => 'Doctor consultation', 'fee' => 1500],
-    ];
-
-    public function store(Request $request): RedirectResponse
+    public function store(StoreAppointmentRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'service' => ['required', Rule::in(array_keys(self::SERVICES))],
-            'appointment_date' => ['required', 'date', 'after_or_equal:today'],
-            'payment_method' => ['required', Rule::in(['Cash', 'GCash', 'Card'])],
-        ]);
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
 
-        $service = self::SERVICES[$validated['service']];
+        $validated = $request->validated();
+
+        $service = config('appointments.services')[$validated['service']];
 
         Appointment::create([
-            'user_id' => $request->user()->getAuthIdentifier(),
+            'user_id' => $user->getAuthIdentifier(),
             'service' => $service['name'],
             'appointment_date' => $validated['appointment_date'],
             'fee' => $service['fee'],

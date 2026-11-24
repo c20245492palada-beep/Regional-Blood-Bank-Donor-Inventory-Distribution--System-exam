@@ -4,11 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Appointment;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Client\Request as HttpRequest;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class AuthenticationAndAppointmentTest extends TestCase
@@ -31,7 +31,6 @@ class AuthenticationAndAppointmentTest extends TestCase
             'name' => 'Alex Rivera',
             'email' => 'alex@example.com',
             'phone_number' => '+639171234567',
-            'phone_verified_at' => null,
         ]);
         $this->assertDatabaseMissing('users', [
             'email' => 'alex@example.com',
@@ -84,108 +83,54 @@ class AuthenticationAndAppointmentTest extends TestCase
             ->assertSee(route('password.request'));
     }
 
-    public function test_guest_can_request_a_password_reset_code(): void
+    public function test_guest_can_request_a_password_reset_link_by_email(): void
     {
-        $user = User::factory()->create([
-            'phone_number' => '+639171234567',
-            'phone_verified_at' => now(),
-        ]);
-        config(['services.semaphore.key' => 'test-semaphore-key']);
-        Http::fake([
-            'https://api.semaphore.co/api/v4/messages' => Http::response([['status' => 'Queued']], 200),
-        ]);
+        $user = User::factory()->create();
+        Notification::fake();
 
         $this->get(route('password.request'))
             ->assertOk()
-            ->assertSee('Send Reset Code');
+            ->assertSee('Send Reset Link')
+            ->assertSee('Email Address')
+            ->assertDontSee('Mobile Number');
 
         $this->post(route('password.email'), [
-            'phone_number' => '09171234567',
+            'email' => $user->email,
         ])->assertRedirect(route('password.request'))
-            ->assertSessionHas('status', 'If this number is registered and verified, a password reset code will be sent by SMS.');
+            ->assertSessionHas('status', 'If an account exists for that email address, a password reset link will be sent.');
 
-        $sentCode = null;
-
-        Http::assertSent(function (HttpRequest $request) use (&$sentCode): bool {
-            if ($request->url() !== 'https://api.semaphore.co/api/v4/messages' || $request['number'] !== '09171234567') {
-                return false;
-            }
-
-            preg_match('/password reset code is (\d{6})/', $request['message'], $matches);
-            $sentCode = $matches[1] ?? null;
-
-            return $sentCode !== null;
-        });
-
-        $this->assertIsString($sentCode);
-        $this->assertDatabaseHas('phone_verification_codes', [
-            'user_id' => $user->id,
-            'purpose' => 'password_reset',
-        ]);
+        Notification::assertSentTo($user, ResetPassword::class);
     }
 
-    public function test_unknown_phone_gets_the_same_reset_request_response_without_sending_sms(): void
+    public function test_unknown_email_gets_the_same_reset_request_response(): void
     {
-        config(['services.semaphore.key' => 'test-semaphore-key']);
-        Http::fake();
+        Notification::fake();
 
         $this->post(route('password.email'), [
-            'phone_number' => '+639171234567',
+            'email' => 'unknown@example.com',
         ])->assertRedirect(route('password.request'))
-            ->assertSessionHas('status', 'If this number is registered and verified, a password reset code will be sent by SMS.');
+            ->assertSessionHas('status', 'If an account exists for that email address, a password reset link will be sent.');
 
-        Http::assertNothingSent();
+        Notification::assertNothingSent();
     }
 
-    public function test_unverified_phone_gets_the_same_reset_request_response_without_sending_sms(): void
-    {
-        $user = User::factory()->create([
-            'phone_number' => '+639171234567',
-            'phone_verified_at' => null,
-        ]);
-        config(['services.semaphore.key' => 'test-semaphore-key']);
-        Http::fake();
-
-        $this->post(route('password.email'), [
-            'phone_number' => $user->phone_number,
-        ])->assertRedirect(route('password.request'))
-            ->assertSessionHas('status', 'If this number is registered and verified, a password reset code will be sent by SMS.');
-
-        Http::assertNothingSent();
-    }
-
-    public function test_user_can_reset_their_password_with_a_valid_code(): void
+    public function test_user_can_reset_their_password_with_a_valid_email_token(): void
     {
         $user = User::factory()->create([
             'password' => Hash::make('old-password-123'),
-            'phone_number' => '+639171234567',
-            'phone_verified_at' => now(),
-        ]);
-        config(['services.semaphore.key' => 'test-semaphore-key']);
-        Http::fake([
-            'https://api.semaphore.co/api/v4/messages' => Http::response([['status' => 'Queued']], 200),
         ]);
 
-        $this->post(route('password.email'), [
-            'phone_number' => $user->phone_number,
-        ])->assertRedirect(route('password.request'));
+        $token = Password::createToken($user);
+        $resetUrl = route('password.reset', ['token' => $token]);
 
-        $sentCode = null;
-
-        Http::assertSent(function (HttpRequest $request) use (&$sentCode): bool {
-            preg_match('/password reset code is (\d{6})/', $request['message'], $matches);
-            $sentCode = $matches[1] ?? null;
-
-            return $request->url() === 'https://api.semaphore.co/api/v4/messages' && $sentCode !== null;
-        });
-
-        $this->get(route('password.reset'))->assertOk()
-            ->assertSee('Password Reset Code')
-            ->assertSee('Change Password');
+        $this->get($resetUrl.'?email='.urlencode($user->email))
+            ->assertOk()
+            ->assertSee('Email Address')
+            ->assertSee('Reset Password');
 
         $this->post(route('password.update'), [
-            'phone_number' => '09171234567',
-            'code' => $sentCode,
+            'token' => $token,
+            'email' => $user->email,
             'password' => 'new-password-123',
             'password_confirmation' => 'new-password-123',
         ])->assertRedirect(route('login'))
@@ -193,95 +138,15 @@ class AuthenticationAndAppointmentTest extends TestCase
 
         $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
 
-        $this->get(route('login'))
-            ->assertOk()
-            ->assertSee('Your password has been reset.');
-
-        $this->from(route('password.reset'))->post(route('password.update'), [
-            'phone_number' => $user->phone_number,
-            'code' => $sentCode,
+        $this->from($resetUrl)->post(route('password.update'), [
+            'token' => $token,
+            'email' => $user->email,
             'password' => 'another-password-123',
             'password_confirmation' => 'another-password-123',
-        ])->assertRedirect(route('password.reset'))
-            ->assertSessionHasErrors('code');
+        ])->assertRedirect($resetUrl)
+            ->assertSessionHasErrors('email');
 
         $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
-    }
-
-    public function test_invalid_password_reset_code_does_not_change_the_password(): void
-    {
-        $user = User::factory()->create([
-            'password' => Hash::make('old-password-123'),
-            'phone_number' => '+639171234567',
-            'phone_verified_at' => now(),
-        ]);
-
-        $this->from(route('password.reset'))->post(route('password.update'), [
-            'phone_number' => $user->phone_number,
-            'code' => '000000',
-            'password' => 'new-password-123',
-            'password_confirmation' => 'new-password-123',
-        ])->assertRedirect(route('password.reset'))
-            ->assertSessionHasErrors('code');
-
-        $this->assertTrue(Hash::check('old-password-123', $user->fresh()->password));
-    }
-
-    public function test_expired_and_exhausted_codes_cannot_reset_a_password(): void
-    {
-        $expiredUser = User::factory()->create([
-            'password' => Hash::make('old-password-123'),
-            'phone_number' => '+639171234567',
-            'phone_verified_at' => now(),
-        ]);
-        DB::table('phone_verification_codes')->insert([
-            'user_id' => $expiredUser->id,
-            'purpose' => 'password_reset',
-            'code_hash' => Hash::make('123456'),
-            'expires_at' => now()->subSecond(),
-            'attempts' => 0,
-            'created_at' => now()->subMinutes(11),
-        ]);
-
-        $this->from(route('password.reset'))
-            ->post(route('password.update'), [
-                'phone_number' => $expiredUser->phone_number,
-                'code' => '123456',
-                'password' => 'new-password-123',
-                'password_confirmation' => 'new-password-123',
-            ])
-            ->assertRedirect(route('password.reset'))
-            ->assertSessionHasErrors('code');
-
-        $limitedUser = User::factory()->create([
-            'password' => Hash::make('old-password-123'),
-            'phone_number' => '+639181234567',
-            'phone_verified_at' => now(),
-        ]);
-        DB::table('phone_verification_codes')->insert([
-            'user_id' => $limitedUser->id,
-            'purpose' => 'password_reset',
-            'code_hash' => Hash::make('123456'),
-            'expires_at' => now()->addMinutes(10),
-            'attempts' => 4,
-            'created_at' => now(),
-        ]);
-
-        $this->from(route('password.reset'))
-            ->post(route('password.update'), [
-                'phone_number' => $limitedUser->phone_number,
-                'code' => '654321',
-                'password' => 'new-password-123',
-                'password_confirmation' => 'new-password-123',
-            ])
-            ->assertRedirect(route('password.reset'))
-            ->assertSessionHasErrors('code');
-
-        $this->assertDatabaseMissing('phone_verification_codes', [
-            'user_id' => $limitedUser->id,
-            'purpose' => 'password_reset',
-        ]);
-        $this->assertTrue(Hash::check('old-password-123', $limitedUser->fresh()->password));
     }
 
     public function test_guest_cannot_open_dashboard_or_create_appointments(): void
@@ -332,6 +197,67 @@ class AuthenticationAndAppointmentTest extends TestCase
             ->assertSessionHasErrors('service');
 
         $this->assertDatabaseCount('appointments', 0);
+    }
+
+    public function test_past_appointment_date_is_rejected(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('appointments.store'), [
+                'service' => 'plasma',
+                'appointment_date' => today()->subDay()->toDateString(),
+                'payment_method' => 'GCash',
+            ])
+            ->assertSessionHasErrors('appointment_date');
+
+        $this->assertDatabaseCount('appointments', 0);
+    }
+
+    public function test_appointment_inputs_are_sanitized_before_validation_and_persistence(): void
+    {
+        $user = User::factory()->create();
+        $appointmentDate = today()->addDay()->toDateString();
+
+        $this->actingAs($user)->post(route('appointments.store'), [
+            'service' => '<strong>plasma</strong>',
+            'appointment_date' => '<strong>'.$appointmentDate.'</strong>',
+            'payment_method' => '<em>GCash</em>',
+        ])->assertRedirect(route('dashboard'));
+
+        $appointment = Appointment::query()->sole();
+
+        $this->assertSame('Plasma donation', $appointment->service);
+        $this->assertSame($appointmentDate, $appointment->appointment_date->toDateString());
+        $this->assertSame('GCash', $appointment->payment_method);
+    }
+
+    public function test_appointment_configuration_drives_the_form_validation_and_saved_values(): void
+    {
+        config([
+            'appointments.services.special-screening' => [
+                'name' => 'Special screening',
+                'fee' => 1750,
+            ],
+            'appointments.payment_methods.BankTransfer' => 'Bank transfer at clinic',
+        ]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('value="special-screening" data-fee="1750">Special screening</option>', false)
+            ->assertSee('value="BankTransfer">Bank transfer at clinic</option>', false);
+
+        $this->post(route('appointments.store'), [
+            'service' => 'special-screening',
+            'appointment_date' => today()->addDay()->toDateString(),
+            'payment_method' => 'BankTransfer',
+        ])->assertRedirect(route('dashboard'));
+
+        $appointment = Appointment::query()->sole();
+
+        $this->assertSame('Special screening', $appointment->service);
+        $this->assertSame('1750.00', $appointment->fee);
+        $this->assertSame('BankTransfer', $appointment->payment_method);
     }
 
     public function test_authenticated_user_can_cancel_their_pending_appointment(): void

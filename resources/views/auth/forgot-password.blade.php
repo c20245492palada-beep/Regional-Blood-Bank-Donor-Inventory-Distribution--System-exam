@@ -63,7 +63,7 @@
     <body>
         <main class="reset-shell">
             <h1>Forgot Password?</h1>
-            <p class="subtitle">Enter your verified mobile number (09XXXXXXXXX or +639XXXXXXXXX) and we'll send a six-digit reset code by SMS.</p>
+            <p class="subtitle">Enter your email address and we'll send you a password reset link.</p>
 
             @if (session('status'))
                 <div class="form-message" role="status">{{ session('status') }}</div>
@@ -79,12 +79,11 @@
 
             <form method="POST" action="{{ route('password.email') }}">
                 @csrf
-                <label for="phone_number">Mobile Number</label>
-                <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="09302324013" autocomplete="tel" maxlength="13" pattern="(?:\+639[0-9]{9}|09[0-9]{9})" required autofocus>
-                <button type="submit">Send Reset Code</button>
+                <label for="email">Email Address</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Email Address" autocomplete="email" required autofocus>
+                <button type="submit">Send Reset Link</button>
             </form>
 
-            <a href="{{ route('password.reset') }}">I already have a reset code</a>
             <a href="{{ route('login') }}">Back to Login</a>
         </main>
     </body>

@@ -18,12 +18,15 @@ class AppointmentFactory extends Factory
      */
     public function definition(): array
     {
+        $defaultService = array_values(config('appointments.services'))[0];
+        $defaultPaymentMethod = array_key_first(config('appointments.payment_methods'));
+
         return [
             'user_id' => User::factory(),
-            'service' => 'Blood donation screening',
+            'service' => $defaultService['name'],
             'appointment_date' => fake()->dateTimeBetween('tomorrow', '+1 month')->format('Y-m-d'),
-            'fee' => 500,
-            'payment_method' => 'Cash',
+            'fee' => $defaultService['fee'],
+            'payment_method' => $defaultPaymentMethod,
             'payment_status' => 'Pending',
             'status' => 'Pending',
         ];
