@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?= e(str_replace('_', '-', app()->getLocale())) ?>">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -135,20 +135,20 @@
                     <h1>Account Settings</h1>
                     <p>Manage your profile and password.</p>
                 </div>
-                <a class="back-link" href="{{ route('dashboard') }}">Back to dashboard</a>
+                <a class="back-link" href="<?= e(route('dashboard')) ?>">Back to dashboard</a>
             </header>
 
-            @if (session('status'))
-                <div class="message" role="status">{{ session('status') }}</div>
-            @endif
+            <?php if (session('status')) { ?>
+                <div class="message" role="status"><?= e(session('status')) ?></div>
+            <?php } ?>
 
-            @if ($errors->any())
+            <?php if ($errors->any()) { ?>
                 <div class="errors" role="alert">
-                    @foreach ($errors->all() as $error)
-                        <div>{{ $error }}</div>
-                    @endforeach
+                    <?php foreach ($errors->all() as $error) { ?>
+                        <div><?= e($error) ?></div>
+                    <?php } ?>
                 </div>
-            @endif
+            <?php } ?>
 
             <section class="settings-panel" aria-labelledby="profile-heading">
                 <div>
@@ -156,23 +156,23 @@
                     <p class="panel-description">Change the name, email address, and mobile contact number on your account.</p>
                 </div>
 
-                <form class="settings-form" method="POST" action="{{ route('settings.profile.update') }}">
-                    @csrf
-                    @method('PATCH')
+                <form class="settings-form" method="POST" action="<?= e(route('settings.profile.update')) ?>">
+                    <?= csrf_field() ?>
+                    <?= method_field('PATCH') ?>
 
                     <label for="name">
                         Name
-                        <input id="name" type="text" name="name" value="{{ old('name', $user->name) }}" autocomplete="name" maxlength="255" required>
+                        <input id="name" type="text" name="name" value="<?= e(old('name', $user->name)) ?>" autocomplete="name" maxlength="255" required>
                     </label>
 
                     <label for="email">
                         Email address
-                        <input id="email" type="email" name="email" value="{{ old('email', $user->email) }}" autocomplete="email" maxlength="255" required>
+                        <input id="email" type="email" name="email" value="<?= e(old('email', $user->email)) ?>" autocomplete="email" maxlength="255" required>
                     </label>
 
                     <label for="phone_number">
                         Mobile contact number (09XXXXXXXXX or +639XXXXXXXXX)
-                        <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number', $user->phone_number) }}" autocomplete="tel" maxlength="13" pattern="^(\+639[0-9]{9}|09[0-9]{9})$" title="Enter a Philippine mobile number as 09XXXXXXXXX or +639XXXXXXXXX">
+                        <input id="phone_number" type="tel" name="phone_number" value="<?= e(old('phone_number', $user->phone_number)) ?>" autocomplete="tel" maxlength="13" pattern="^(\+639[0-9]{9}|09[0-9]{9})$" title="Enter a Philippine mobile number as 09XXXXXXXXX or +639XXXXXXXXX">
                     </label>
 
                     <button class="save-button" type="submit">Save profile</button>
@@ -185,9 +185,9 @@
                     <p class="panel-description">Enter your current password before choosing a new one.</p>
                 </div>
 
-                <form class="settings-form" method="POST" action="{{ route('settings.password.update') }}">
-                    @csrf
-                    @method('PUT')
+                <form class="settings-form" method="POST" action="<?= e(route('settings.password.update')) ?>">
+                    <?= csrf_field() ?>
+                    <?= method_field('PUT') ?>
 
                     <label for="current_password">
                         Current password

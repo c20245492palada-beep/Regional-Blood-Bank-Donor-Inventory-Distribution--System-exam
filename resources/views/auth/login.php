@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?= e(str_replace('_', '-', app()->getLocale())) ?>">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -227,24 +227,24 @@
                 <h1>Welcome Back !</h1>
                 <p class="subtitle">Login to your Account</p>
 
-                @if (session('status'))
-                    <div class="form-errors" role="status">{{ session('status') }}</div>
-                @endif
+                <?php if (session('status')) { ?>
+                    <div class="form-errors" role="status"><?= e(session('status')) ?></div>
+                <?php } ?>
 
-                @if ($errors->any())
+                <?php if ($errors->any()) { ?>
                     <div class="form-errors" role="alert">
-                        @foreach ($errors->all() as $error)
-                            <div>{{ $error }}</div>
-                        @endforeach
+                        <?php foreach ($errors->all() as $error) { ?>
+                            <div><?= e($error) ?></div>
+                        <?php } ?>
                     </div>
-                @endif
+                <?php } ?>
 
-                <form class="login-form" method="POST" action="{{ route('login') }}">
-                    @csrf
+                <form class="login-form" method="POST" action="<?= e(route('login')) ?>">
+                    <?= csrf_field() ?>
 
                     <div class="input-group">
                         <label for="email">Email Address</label>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Email Address" autocomplete="email" required />
+                        <input id="email" type="email" name="email" value="<?= e(old('email')) ?>" placeholder="Email Address" autocomplete="email" required />
                     </div>
 
                     <div class="input-group">
@@ -257,13 +257,13 @@
                             <input type="checkbox" name="remember" value="1" />
                             Remember me
                         </label>
-                        <a class="forgot" href="{{ route('password.request') }}">Forgot Password?</a>
+                        <a class="forgot" href="<?= e(route('password.request')) ?>">Forgot Password?</a>
                     </div>
 
                     <button class="login-btn" type="submit">Login</button>
                 </form>
 
-                <p class="register-link">Don't have an account? <a href="{{ route('register') }}">Register</a></p>
+                <p class="register-link">Don't have an account? <a href="<?= e(route('register')) ?>">Register</a></p>
             </div>
         </div>
     </body>

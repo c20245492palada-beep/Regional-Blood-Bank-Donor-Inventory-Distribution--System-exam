@@ -9,13 +9,12 @@ use App\Models\DistributionLog;
 use App\Models\HospitalRequest as HospitalRequestModel;
 use App\Services\BloodBankService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class DistributionLogController extends Controller
 {
-    public function __construct(private readonly BloodBankService $bloodBankService)
-    {
-    }
+    public function __construct(private readonly BloodBankService $bloodBankService) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -57,6 +56,15 @@ class DistributionLogController extends Controller
         $log = $this->bloodBankService->distribute($request->validated());
 
         return response()->json($log, 201);
+    }
+
+    public function storeFromDashboard(StoreDistributionLogRequest $request): RedirectResponse
+    {
+        $log = $this->bloodBankService->distribute($request->validated());
+
+        return redirect()
+            ->route('dashboard')
+            ->with('status', "Blood bag {$log->bloodBag->blood_bag_code} issued successfully.");
     }
 
     public function update(UpdateDistributionLogRequest $request, int $distributionLog): JsonResponse

@@ -5,12 +5,49 @@ namespace App\Services;
 use App\Models\BloodBag;
 use App\Models\DistributionLog;
 use App\Models\Donor;
+use App\Models\Hospital;
 use App\Models\HospitalRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class BloodBankService
 {
+    public function createHospitalRequest(array $data): HospitalRequest
+    {
+        [$bloodType, $rhFactor] = $this->normalizeBloodGroup(
+            $data['blood_type'],
+            $data['rh_factor']
+        );
+
+        return DB::transaction(function () use ($data, $bloodType, $rhFactor) {
+            $hospital = Hospital::query()->firstOrCreate([
+                'hospital_name' => trim(strip_tags($data['hospital_name'])),
+            ]);
+
+            return $hospital->hospitalRequests()->create([
+                'request_date' => $data['request_date'],
+                'blood_type' => $bloodType,
+                'rh_factor' => $rhFactor,
+                'units_requested' => $data['units_requested'],
+            ]);
+        });
+    }
+
+    public function createDonor(array $data): Donor
+    {
+        [$bloodType, $rhFactor] = $this->normalizeBloodGroup(
+            $data['blood_type'],
+            $data['rh_factor']
+        );
+
+        return Donor::create([
+            'donor_national_id' => self::formatDonorId($data['donor_national_id']),
+            'donor_name' => trim(strip_tags($data['donor_name'])),
+            'blood_type' => $bloodType,
+            'rh_factor' => $rhFactor,
+        ]);
+    }
+
     public function createBloodBag(array $data): BloodBag
     {
         return DB::transaction(function () use ($data) {
@@ -84,7 +121,7 @@ class BloodBankService
                 $request->rh_factor
             );
 
-            if (!$this->isCompatible($donorType, $donorRh, $recipientType, $recipientRh)) {
+            if (! $this->isCompatible($donorType, $donorRh, $recipientType, $recipientRh)) {
                 throw ValidationException::withMessages([
                     'blood_bag_id' => 'The selected blood bag is not compatible with the hospital request.',
                 ]);
@@ -93,7 +130,7 @@ class BloodBankService
             $request->blood_type = $recipientType;
             $request->rh_factor = $recipientRh;
 
-            if (!in_array($request->status, ['Pending', 'Partial'], true)) {
+            if (! in_array($request->status, ['Pending', 'Partial'], true)) {
                 throw ValidationException::withMessages([
                     'hospital_request_id' => 'This hospital request is no longer open for distribution.',
                 ]);
@@ -142,7 +179,7 @@ class BloodBankService
         });
     }
 
-    public function formatDonorId(string $donorId): string
+    public static function formatDonorId(string $donorId): string
     {
         return preg_replace('/[^A-Z0-9]/', '', strtoupper(trim(strip_tags($donorId))));
     }
@@ -151,12 +188,12 @@ class BloodBankService
     {
         $this->normalizeDonor($donor);
 
-        return $donor->blood_type . $donor->rh_factor;
+        return $donor->blood_type.$donor->rh_factor;
     }
 
     private function normalizeDonor(Donor $donor): void
     {
-        $donor->donor_national_id = $this->formatDonorId($donor->donor_national_id);
+        $donor->donor_national_id = self::formatDonorId($donor->donor_national_id);
         $donor->donor_name = trim(strip_tags($donor->donor_name));
         [$donor->blood_type, $donor->rh_factor] = $this->normalizeBloodGroup(
             $donor->blood_type,
@@ -172,7 +209,7 @@ class BloodBankService
     {
         $bloodType = strtoupper(trim(strip_tags($bloodType)));
 
-        if (!preg_match('/^(AB|A|B|O)([+-])?$/', $bloodType, $matches)) {
+        if (! preg_match('/^(AB|A|B|O)([+-])?$/', $bloodType, $matches)) {
             throw ValidationException::withMessages([
                 'blood_type' => 'Blood type must be A, B, AB, or O, optionally followed by an RH sign.',
             ]);

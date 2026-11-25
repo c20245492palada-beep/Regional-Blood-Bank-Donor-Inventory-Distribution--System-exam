@@ -6,7 +6,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BloodBagController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DistributionLogController;
+use App\Http\Controllers\DonorController;
+use App\Http\Controllers\HospitalRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -35,5 +39,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/password', [AccountSettingsController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
     Route::post('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
+    Route::post('/donors', [DonorController::class, 'store'])->name('donors.store');
+    Route::post('/blood-bags', [BloodBagController::class, 'storeFromDashboard'])->name('blood-bags.store');
+    Route::post('/hospital-requests', [HospitalRequestController::class, 'store'])->name('hospital-requests.store');
+    Route::post('/distribution-logs', [DistributionLogController::class, 'storeFromDashboard'])->name('distribution-logs.store');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

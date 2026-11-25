@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?php
+
+use Illuminate\Foundation\Vite;
+
+?><?= e(str_replace('_', '-', app()->getLocale())) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Blood Bank Dashboard</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <?= app(Vite::class)(['resources/css/app.css', 'resources/js/app.js']) ?>
     <style>
         :root {
             --bg: #f5f1f6;
@@ -250,6 +254,10 @@
             display: grid;
             grid-template-columns: 1.3fr 0.7fr;
             gap: 22px;
+        }
+
+        .blood-stock-forms {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .panel {
@@ -590,7 +598,11 @@
                     <span class="sidebar-icon" aria-hidden="true">◈</span>
                     <span>Blood stock</span>
                 </a>
-                <a class="sidebar-link" href="{{ route('settings.edit') }}">
+                <a class="sidebar-link" href="#hospital-requests">
+                    <span class="sidebar-icon" aria-hidden="true">⌑</span>
+                    <span>Hospital requests</span>
+                </a>
+                <a class="sidebar-link" href="<?= e(route('settings.edit')) ?>">
                     <span class="sidebar-icon" aria-hidden="true">⚙</span>
                     <span>Settings</span>
                 </a>
@@ -600,9 +612,9 @@
         <main class="page-shell">
         <div class="topbar">
             <div class="account-actions">
-                <div class="account-pill">{{ auth()->user()->name }}</div>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
+                <div class="account-pill"><?= e(auth()->user()->name) ?></div>
+                <form method="POST" action="<?= e(route('logout')) ?>">
+                    <?= csrf_field() ?>
                     <button class="logout-button" type="submit">Log out</button>
                 </form>
             </div>
@@ -613,59 +625,59 @@
                 <h1>Blood Bank Dashboard</h1>
                 <p>Track donor inventory, open hospital requests, and distribution activity across the network.</p>
             </div>
-            <div class="hero-badge">{{ now()->format('d M Y') }}</div>
+            <div class="hero-badge"><?= e(now()->format('d M Y')) ?></div>
         </header>
 
-        @if (session('status'))
-            <div class="flash-message" role="status">{{ session('status') }}</div>
-        @endif
-        @if (session('error'))
-            <div class="flash-message error" role="alert">{{ session('error') }}</div>
-        @endif
+        <?php if (session('status')) { ?>
+            <div class="flash-message" role="status"><?= e(session('status')) ?></div>
+        <?php } ?>
+        <?php if (session('error')) { ?>
+            <div class="flash-message error" role="alert"><?= e(session('error')) ?></div>
+        <?php } ?>
         <section class="booking-panel panel" id="appointments" style="margin-bottom: 24px;">
             <div class="panel-header">
                 <h2>Book an appointment</h2>
                 <span class="panel-tag">Payment required</span>
             </div>
 
-            @if ($errors->any())
+            <?php if ($errors->any()) { ?>
                 <div class="form-errors" role="alert">
-                    @foreach ($errors->all() as $error)
-                        <div>{{ $error }}</div>
-                    @endforeach
+                    <?php foreach ($errors->all() as $error) { ?>
+                        <div><?= e($error) ?></div>
+                    <?php } ?>
                 </div>
-            @endif
+            <?php } ?>
 
             <div class="booking-body">
-                <form method="POST" action="{{ route('appointments.store') }}" class="appointment-form">
-                    @csrf
+                <form method="POST" action="<?= e(route('appointments.store')) ?>" class="appointment-form">
+                    <?= csrf_field() ?>
                     <div class="booking-grid">
                         <label>
                             <span>Clinic service</span>
                             <select name="service" id="service">
-                                @foreach ($appointmentServices as $serviceKey => $service)
-                                    <option value="{{ $serviceKey }}" data-fee="{{ $service['fee'] }}">{{ $service['name'] }}</option>
-                                @endforeach
+                                <?php foreach ($appointmentServices as $serviceKey => $service) { ?>
+                                    <option value="<?= e($serviceKey) ?>" data-fee="<?= e($service['fee']) ?>"><?= e($service['name']) ?></option>
+                                <?php } ?>
                             </select>
                         </label>
 
                         <label>
                             <span>Preferred date</span>
-                            <input type="date" name="appointment_date" min="{{ now()->toDateString() }}" value="{{ now()->addDay()->format('Y-m-d') }}" required />
+                            <input type="date" name="appointment_date" min="<?= e(now()->toDateString()) ?>" value="<?= e(now()->addDay()->format('Y-m-d')) ?>" required />
                         </label>
 
                         <label>
                             <span>Payment method at the clinic</span>
                             <select name="payment_method" required>
-                                @foreach ($paymentMethods as $paymentMethod => $label)
-                                    <option value="{{ $paymentMethod }}">{{ $label }}</option>
-                                @endforeach
+                                <?php foreach ($paymentMethods as $paymentMethod => $label) { ?>
+                                    <option value="<?= e($paymentMethod) ?>"><?= e($label) ?></option>
+                                <?php } ?>
                             </select>
                         </label>
 
                         <div class="fee-box">
                             <span>Estimated fee</span>
-                            <strong id="fee-display">₱{{ number_format(array_values($appointmentServices)[0]['fee'], 2) }}</strong>
+                            <strong id="fee-display">₱<?= e(number_format(array_values($appointmentServices)[0]['fee'], 2)) ?></strong>
                         </div>
                     </div>
 
@@ -680,7 +692,7 @@
         <section class="panel" style="margin-bottom: 28px;">
             <div class="panel-header">
                 <h2>My appointments</h2>
-                <span class="panel-tag">{{ $appointments->count() }} total</span>
+                <span class="panel-tag"><?= e($appointments->count()) ?> total</span>
             </div>
 
             <div style="overflow-x: auto;">
@@ -696,31 +708,201 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($appointments as $appointment)
-                            <tr>
-                                <td><strong>{{ $appointment->service }}</strong></td>
-                                <td>{{ $appointment->appointment_date->format('d M Y') }}</td>
-                                <td>₱{{ number_format((float) $appointment->fee, 2) }}</td>
-                                <td>{{ $appointment->payment_method }} · {{ $appointment->payment_status }}</td>
-                                <td>{{ $appointment->status }}</td>
-                                <td>
-                                    @if ($appointment->status === 'Pending')
-                                        <form method="POST" action="{{ route('appointments.cancel', $appointment) }}" onsubmit="return confirm('Cancel this appointment?')">
-                                            @csrf
-                                            <button class="cancel-button" type="submit">Cancel</button>
-                                        </form>
-                                    @else
-                                        <span class="muted">—</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
+                        <?php if ($appointments->isEmpty()) { ?>
                             <tr>
                                 <td colspan="6" class="muted" style="padding: 24px 22px;">No appointments yet.</td>
                             </tr>
-                        @endforelse
+                        <?php } else { ?>
+                        <?php foreach ($appointments as $appointment) { ?>
+                            <tr>
+                                <td><strong><?= e($appointment->service) ?></strong></td>
+                                <td><?= e($appointment->appointment_date->format('d M Y')) ?></td>
+                                <td>₱<?= e(number_format((float) $appointment->fee, 2)) ?></td>
+                                <td><?= e($appointment->payment_method) ?> · <?= e($appointment->payment_status) ?></td>
+                                <td><?= e($appointment->status) ?></td>
+                                <td>
+                                    <?php if ($appointment->status === 'Pending') { ?>
+                                        <form method="POST" action="<?= e(route('appointments.cancel', $appointment)) ?>" onsubmit="return confirm('Cancel this appointment?')">
+                                            <?= csrf_field() ?>
+                                            <button class="cancel-button" type="submit">Cancel</button>
+                                        </form>
+                                    <?php } else { ?>
+                                        <span class="muted">—</span>
+                                    <?php } ?>
+                                </td>
+                            </tr>
+                        <?php } ?>
+                        <?php } ?>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <section class="panel booking-panel" style="margin-bottom: 28px;" id="blood-stock-forms">
+            <div class="panel-header">
+                <h2>Manage blood stock</h2>
+                <span class="panel-tag">Donor registry &amp; donations</span>
+            </div>
+
+            <div class="booking-body content-grid blood-stock-forms">
+                <div>
+                    <h3>Register donor</h3>
+                    <form method="POST" action="<?= e(route('donors.store')) ?>" class="appointment-form">
+                        <?= csrf_field() ?>
+                        <div class="booking-grid">
+                            <label>
+                                <span>Donor ID</span>
+                                <input name="donor_national_id" maxlength="50" value="<?= e(old('donor_national_id')) ?>" required />
+                            </label>
+                            <label>
+                                <span>Full name</span>
+                                <input name="donor_name" maxlength="150" value="<?= e(old('donor_name')) ?>" required />
+                            </label>
+                            <label>
+                                <span>Blood type</span>
+                                <select name="blood_type" required>
+                                    <?php foreach (['A', 'B', 'AB', 'O'] as $bloodType) { ?>
+                                        <option value="<?= e($bloodType) ?>" <?= old('blood_type', 'O') === $bloodType ? 'selected' : '' ?>><?= e($bloodType) ?></option>
+                                    <?php } ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span>RH factor</span>
+                                <select name="rh_factor" required>
+                                    <option value="+" <?= old('rh_factor', '+') === '+' ? 'selected' : '' ?>>Positive (+)</option>
+                                    <option value="-" <?= old('rh_factor') === '-' ? 'selected' : '' ?>>Negative (-)</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="booking-actions">
+                            <button type="submit">Register donor</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div>
+                    <h3>Record donation as blood bag</h3>
+                    <form method="POST" action="<?= e(route('blood-bags.store')) ?>" class="appointment-form">
+                        <?= csrf_field() ?>
+                        <div class="booking-grid">
+                            <label>
+                                <span>Donor</span>
+                                <select name="donor_id" required>
+                                    <option value="">Select a donor</option>
+                                    <?php foreach ($donors as $donor) { ?>
+                                        <option value="<?= e($donor->id) ?>" <?= (string) old('donor_id') === (string) $donor->id ? 'selected' : '' ?>>
+                                            <?= e($donor->donor_name) ?> · <?= e($donor->blood_type) ?><?= e($donor->rh_factor) ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Blood bag code</span>
+                                <input name="blood_bag_code" maxlength="80" value="<?= e(old('blood_bag_code')) ?>" required />
+                            </label>
+                            <label>
+                                <span>Donation date</span>
+                                <input type="date" name="donation_date" max="<?= e(today()->toDateString()) ?>" value="<?= e(old('donation_date', today()->toDateString())) ?>" required />
+                            </label>
+                        </div>
+                        <div class="booking-actions">
+                            <button type="submit" <?= $donors->isEmpty() ? 'disabled' : '' ?>>Record donation</button>
+                        </div>
+                        <?php if ($donors->isEmpty()) { ?>
+                            <p class="booking-notice">Register a donor before recording a donation.</p>
+                        <?php } ?>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel booking-panel" style="margin-bottom: 28px;" id="hospital-requests">
+            <div class="panel-header">
+                <h2>Hospital requests &amp; distributions</h2>
+                <span class="panel-tag">Live inventory workflow</span>
+            </div>
+
+            <div class="booking-body content-grid blood-stock-forms">
+                <div>
+                    <h3>Create hospital request</h3>
+                    <form method="POST" action="<?= e(route('hospital-requests.store')) ?>" class="appointment-form">
+                        <?= csrf_field() ?>
+                        <div class="booking-grid">
+                            <label>
+                                <span>Hospital name</span>
+                                <input name="hospital_name" maxlength="150" value="<?= e(old('hospital_name')) ?>" required />
+                            </label>
+                            <label>
+                                <span>Request date</span>
+                                <input type="date" name="request_date" max="<?= e(today()->toDateString()) ?>" value="<?= e(old('request_date', today()->toDateString())) ?>" required />
+                            </label>
+                            <label>
+                                <span>Blood type</span>
+                                <select name="blood_type" required>
+                                    <?php foreach (['A', 'B', 'AB', 'O'] as $bloodType) { ?>
+                                        <option value="<?= e($bloodType) ?>" <?= old('blood_type', 'O') === $bloodType ? 'selected' : '' ?>><?= e($bloodType) ?></option>
+                                    <?php } ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span>RH factor</span>
+                                <select name="rh_factor" required>
+                                    <option value="+" <?= old('rh_factor', '+') === '+' ? 'selected' : '' ?>>Positive (+)</option>
+                                    <option value="-" <?= old('rh_factor') === '-' ? 'selected' : '' ?>>Negative (-)</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Units requested</span>
+                                <input type="number" name="units_requested" min="1" step="1" value="<?= e(old('units_requested', 1)) ?>" required />
+                            </label>
+                        </div>
+                        <div class="booking-actions">
+                            <button type="submit">Create request</button>
+                        </div>
+                        <p class="booking-notice">New hospital names are registered when their first request is submitted.</p>
+                    </form>
+                </div>
+
+                <div>
+                    <h3>Issue blood bag to a request</h3>
+                    <form method="POST" action="<?= e(route('distribution-logs.store')) ?>" class="appointment-form">
+                        <?= csrf_field() ?>
+                        <div class="booking-grid">
+                            <label>
+                                <span>Available blood bag</span>
+                                <select name="blood_bag_id" required>
+                                    <option value="">Select a blood bag</option>
+                                    <?php foreach ($availableBagsForDistribution as $bag) { ?>
+                                        <option value="<?= e($bag->id) ?>" <?= (string) old('blood_bag_id') === (string) $bag->id ? 'selected' : '' ?>>
+                                            <?= e($bag->blood_bag_code) ?> · <?= e($bag->donor->donor_name) ?> · <?= e($bag->donor->blood_type) ?><?= e($bag->donor->rh_factor) ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Open hospital request</span>
+                                <select name="hospital_request_id" required>
+                                    <option value="">Select a request</option>
+                                    <?php foreach ($openHospitalRequests as $hospitalRequest) { ?>
+                                        <option value="<?= e($hospitalRequest->id) ?>" <?= (string) old('hospital_request_id') === (string) $hospitalRequest->id ? 'selected' : '' ?>>
+                                            <?= e($hospitalRequest->hospital->hospital_name) ?> · <?= e($hospitalRequest->blood_type) ?><?= e($hospitalRequest->rh_factor) ?> · <?= e($hospitalRequest->units_requested) ?> units · <?= e($hospitalRequest->status) ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Processing fee</span>
+                                <input type="number" name="processing_fee" min="0" max="99999999.99" step="0.01" value="<?= e(old('processing_fee', '0.00')) ?>" required />
+                            </label>
+                        </div>
+                        <div class="booking-actions">
+                            <button type="submit" <?= $availableBagsForDistribution->isEmpty() || $openHospitalRequests->isEmpty() ? 'disabled' : '' ?>>Issue blood bag</button>
+                        </div>
+                        <?php if ($availableBagsForDistribution->isEmpty() || $openHospitalRequests->isEmpty()) { ?>
+                            <p class="booking-notice">An available blood bag and an open hospital request are required.</p>
+                        <?php } ?>
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -730,7 +912,7 @@
                     <span>Accounts</span>
                     <span class="stat-icon">👥</span>
                 </div>
-                <p class="stat-value">{{ $stats['users'] }}</p>
+                <p class="stat-value"><?= e($stats['users']) ?></p>
                 <div class="stat-delta">Registered user accounts</div>
             </article>
 
@@ -739,7 +921,7 @@
                     <span>Available</span>
                     <span class="stat-icon">🩸</span>
                 </div>
-                <p class="stat-value">{{ $stats['available_bags'] }}</p>
+                <p class="stat-value"><?= e($stats['available_bags']) ?></p>
                 <div class="stat-delta">Bags ready for issue</div>
             </article>
 
@@ -748,7 +930,7 @@
                     <span>Requests</span>
                     <span class="stat-icon">📋</span>
                 </div>
-                <p class="stat-value">{{ $stats['pending_requests'] }}</p>
+                <p class="stat-value"><?= e($stats['open_requests']) ?></p>
                 <div class="stat-delta">Open hospital requests</div>
             </article>
 
@@ -757,7 +939,7 @@
                     <span>Units issued</span>
                     <span class="stat-icon">✅</span>
                 </div>
-                <p class="stat-value">{{ $stats['issued_units'] }}</p>
+                <p class="stat-value"><?= e($stats['issued_units']) ?></p>
                 <div class="stat-delta">Cross-matched units</div>
             </article>
 
@@ -766,7 +948,7 @@
                     <span>Revenue</span>
                     <span class="stat-icon">₦</span>
                 </div>
-                <p class="stat-value">{{ number_format($stats['collection_total'], 2) }}</p>
+                <p class="stat-value"><?= e(number_format($stats['collection_total'], 2)) ?></p>
                 <div class="stat-delta">Processing fee total</div>
             </article>
         </section>
@@ -789,30 +971,32 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($recentDistributions as $distribution)
-                            <tr>
-                                <td>
-                                    <strong>{{ $distribution->bloodBag?->blood_bag_code ?? '—' }}</strong>
-                                    <span class="muted">{{ $distribution->issued_at?->format('d M Y') }}</span>
-                                </td>
-                                <td>
-                                    <strong>{{ $distribution->bloodBag?->donor?->donor_name ?? '—' }}</strong>
-                                    <span class="muted">{{ $distribution->bloodBag?->donor?->blood_type ?? '—' }}{{ $distribution->bloodBag?->donor?->rh_factor ?? '' }}</span>
-                                </td>
-                                <td>
-                                    <strong>{{ $distribution->hospitalRequest?->hospital?->hospital_name ?? '—' }}</strong>
-                                    <span class="muted">{{ $distribution->hospitalRequest?->blood_type ?? '—' }}{{ $distribution->hospitalRequest?->rh_factor ?? '' }}</span>
-                                </td>
-                                <td>{{ $distribution->units_issued }}</td>
-                                <td>
-                                    <span class="status-pill status-completed">{{ $distribution->status }}</span>
-                                </td>
-                            </tr>
-                        @empty
+                        <?php if ($recentDistributions->isEmpty()) { ?>
                             <tr>
                                 <td colspan="5" class="muted" style="padding: 24px 22px;">No distribution records yet.</td>
                             </tr>
-                        @endforelse
+                        <?php } else { ?>
+                        <?php foreach ($recentDistributions as $distribution) { ?>
+                            <tr>
+                                <td>
+                                    <strong><?= e($distribution->bloodBag?->blood_bag_code ?? '—') ?></strong>
+                                    <span class="muted"><?= e($distribution->issued_at?->format('d M Y')) ?></span>
+                                </td>
+                                <td>
+                                    <strong><?= e($distribution->bloodBag?->donor?->donor_name ?? '—') ?></strong>
+                                    <span class="muted"><?= e($distribution->bloodBag?->donor?->blood_type ?? '—') ?><?= e($distribution->bloodBag?->donor?->rh_factor ?? '') ?></span>
+                                </td>
+                                <td>
+                                    <strong><?= e($distribution->hospitalRequest?->hospital?->hospital_name ?? '—') ?></strong>
+                                    <span class="muted"><?= e($distribution->hospitalRequest?->blood_type ?? '—') ?><?= e($distribution->hospitalRequest?->rh_factor ?? '') ?></span>
+                                </td>
+                                <td><?= e($distribution->units_issued) ?></td>
+                                <td>
+                                    <span class="status-pill status-completed"><?= e($distribution->status) ?></span>
+                                </td>
+                            </tr>
+                        <?php } ?>
+                        <?php } ?>
                     </tbody>
                 </table>
             </article>
@@ -820,24 +1004,46 @@
             <aside class="panel" id="blood-stock">
                 <div class="panel-header">
                     <h2>Available stock</h2>
-                    <span class="panel-tag">By group</span>
+                    <span class="panel-tag">By group &amp; bag</span>
                 </div>
 
                 <div class="stock-list">
-                    @forelse ($stockByGroup as $group)
+                    <?php if ($stockByGroup->isEmpty()) { ?>
+                        <div class="muted" style="padding-top: 12px;">No available bags in the inventory.</div>
+                    <?php } else { ?>
+                    <?php foreach ($stockByGroup as $group) { ?>
                         <div class="stock-item">
                             <div class="stock-meta">
-                                <div class="blood-badge">{{ $group->blood_group }}</div>
+                                <div class="blood-badge"><?= e($group->blood_group) ?></div>
                                 <div>
-                                    <div style="font-weight: 700;">{{ $group->blood_group }}</div>
+                                    <div style="font-weight: 700;"><?= e($group->blood_group) ?></div>
                                     <div class="muted">Ready to issue</div>
                                 </div>
                             </div>
-                            <div class="stock-count">{{ $group->total }}</div>
+                            <div class="stock-count"><?= e($group->total) ?></div>
                         </div>
-                    @empty
-                        <div class="muted" style="padding-top: 12px;">No available bags in the inventory.</div>
-                    @endforelse
+                    <?php } ?>
+                    <?php } ?>
+                </div>
+
+                <div class="stock-list" style="border-top: 1px solid var(--line);">
+                    <h3>Recent available bags</h3>
+                    <?php if ($availableBags->isEmpty()) { ?>
+                        <div class="muted">No available bags recorded yet.</div>
+                    <?php } else { ?>
+                    <?php foreach ($availableBags as $bag) { ?>
+                        <div class="stock-item">
+                            <div>
+                                <strong><?= e($bag->blood_bag_code) ?></strong>
+                                <div class="muted">
+                                    <?= e($bag->donor->donor_name) ?> · <?= e($bag->donor->blood_type) ?><?= e($bag->donor->rh_factor) ?>
+                                    · Donated <?= e($bag->donation_date->format('d M Y')) ?>
+                                </div>
+                            </div>
+                            <span class="status-pill status-completed">Available</span>
+                        </div>
+                    <?php } ?>
+                    <?php } ?>
                 </div>
             </aside>
         </section>

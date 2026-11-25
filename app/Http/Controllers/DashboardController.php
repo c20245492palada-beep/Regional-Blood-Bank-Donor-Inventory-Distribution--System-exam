@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\BloodBag;
 use App\Models\DistributionLog;
+use App\Models\Donor;
 use App\Models\HospitalRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,9 +18,15 @@ class DashboardController extends Controller
         $stats = [
             'users' => User::count(),
             'available_bags' => BloodBag::where('status', 'Available')->count(),
-            'pending_requests' => HospitalRequest::where('status', 'Pending')->count(),
-            'issued_units' => (int) DistributionLog::sum('units_issued'),
-            'collection_total' => (float) DistributionLog::sum('processing_fee'),
+            'open_requests' => HospitalRequest::query()
+                ->whereIn('status', ['Pending', 'Partial'])
+                ->count(),
+            'issued_units' => (int) DistributionLog::query()
+                ->where('status', 'Completed')
+                ->sum('units_issued'),
+            'collection_total' => (float) DistributionLog::query()
+                ->where('status', 'Completed')
+                ->sum('processing_fee'),
         ];
 
         $recentDistributions = DistributionLog::with([
@@ -48,6 +55,39 @@ class DashboardController extends Controller
             ->orderByDesc('appointment_date')
             ->get();
 
+        $donors = Donor::query()
+            ->orderBy('donor_name')
+            ->get(['id', 'donor_national_id', 'donor_name', 'blood_type', 'rh_factor']);
+
+        $availableBags = BloodBag::query()
+            ->where('status', 'Available')
+            ->with('donor:id,donor_name,blood_type,rh_factor')
+            ->latest('created_at')
+            ->latest('id')
+            ->take(10)
+            ->get();
+
+        $availableBagsForDistribution = BloodBag::query()
+            ->where('status', 'Available')
+            ->with('donor:id,donor_name,blood_type,rh_factor')
+            ->orderBy('blood_bag_code')
+            ->get(['id', 'donor_id', 'blood_bag_code']);
+
+        $openHospitalRequests = HospitalRequest::query()
+            ->whereIn('status', ['Pending', 'Partial'])
+            ->with('hospital:id,hospital_name')
+            ->orderBy('request_date')
+            ->orderBy('id')
+            ->get([
+                'id',
+                'hospital_id',
+                'request_date',
+                'blood_type',
+                'rh_factor',
+                'units_requested',
+                'status',
+            ]);
+
         $appointmentServices = config('appointments.services');
         $paymentMethods = config('appointments.payment_methods');
 
@@ -55,6 +95,10 @@ class DashboardController extends Controller
             'stats',
             'recentDistributions',
             'stockByGroup',
+            'donors',
+            'availableBags',
+            'availableBagsForDistribution',
+            'openHospitalRequests',
             'appointments',
             'appointmentServices',
             'paymentMethods',

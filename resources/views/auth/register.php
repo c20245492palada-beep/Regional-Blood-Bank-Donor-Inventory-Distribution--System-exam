@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?= e(str_replace('_', '-', app()->getLocale())) ?>">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -152,30 +152,30 @@
                 <h1>Create Account</h1>
                 <p class="subtitle">Sign up to continue</p>
 
-                @if ($errors->any())
+                <?php if ($errors->any()) { ?>
                     <div class="form-errors" role="alert">
-                        @foreach ($errors->all() as $error)
-                            <div>{{ $error }}</div>
-                        @endforeach
+                        <?php foreach ($errors->all() as $error) { ?>
+                            <div><?= e($error) ?></div>
+                        <?php } ?>
                     </div>
-                @endif
+                <?php } ?>
 
-                <form class="signup-form" method="POST" action="{{ route('register.submit') }}">
-                    @csrf
+                <form class="signup-form" method="POST" action="<?= e(route('register.submit')) ?>">
+                    <?= csrf_field() ?>
 
                     <div class="input-group">
                         <label for="name">Full Name</label>
-                        <input id="name" type="text" name="name" value="{{ old('name') }}" placeholder="Full Name" autocomplete="name" required />
+                        <input id="name" type="text" name="name" value="<?= e(old('name')) ?>" placeholder="Full Name" autocomplete="name" required />
                     </div>
 
                     <div class="input-group">
                         <label for="email">Email Address</label>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Email Address" autocomplete="email" required />
+                        <input id="email" type="email" name="email" value="<?= e(old('email')) ?>" placeholder="Email Address" autocomplete="email" required />
                     </div>
 
                     <div class="input-group">
                         <label for="phone_number">Mobile Number (09XXXXXXXXX or +639XXXXXXXXX)</label>
-                        <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="09302324013" autocomplete="tel" maxlength="13" pattern="(?:\+639[0-9]{9}|09[0-9]{9})" required />
+                        <input id="phone_number" type="tel" name="phone_number" value="<?= e(old('phone_number')) ?>" placeholder="09302324013" autocomplete="tel" maxlength="13" pattern="(?:\+639[0-9]{9}|09[0-9]{9})" required />
                     </div>
 
                     <div class="input-group">
@@ -191,7 +191,7 @@
                     <button class="submit-btn" type="submit">Sign Up</button>
                 </form>
 
-                <p class="signin-link">Already have an account? <a href="{{ route('login') }}">Login</a></p>
+                <p class="signin-link">Already have an account? <a href="<?= e(route('login')) ?>">Login</a></p>
             </div>
         </div>
     </body>

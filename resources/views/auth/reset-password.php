@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?= e(str_replace('_', '-', app()->getLocale())) ?>">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -65,19 +65,19 @@
             <h1>Reset Password</h1>
             <p class="subtitle">Choose a new password for your account.</p>
 
-            @if ($errors->any())
+            <?php if ($errors->any()) { ?>
                 <div class="form-message" role="alert">
-                    @foreach ($errors->all() as $error)
-                        <div>{{ $error }}</div>
-                    @endforeach
+                    <?php foreach ($errors->all() as $error) { ?>
+                        <div><?= e($error) ?></div>
+                    <?php } ?>
                 </div>
-            @endif
+            <?php } ?>
 
-            <form method="POST" action="{{ route('password.update') }}">
-                @csrf
-                <input type="hidden" name="token" value="{{ $token }}">
+            <form method="POST" action="<?= e(route('password.update')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="token" value="<?= e($token) ?>">
                 <label for="email">Email Address</label>
-                <input id="email" type="email" name="email" value="{{ old('email', $email) }}" autocomplete="email" required>
+                <input id="email" type="email" name="email" value="<?= e(old('email', $email)) ?>" autocomplete="email" required>
                 <label for="password">New Password</label>
                 <input id="password" type="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" required>
                 <label for="password_confirmation">Confirm New Password</label>
@@ -85,7 +85,7 @@
                 <button type="submit">Reset Password</button>
             </form>
 
-            <a href="{{ route('login') }}">Back to Login</a>
+            <a href="<?= e(route('login')) ?>">Back to Login</a>
         </main>
     </body>
 </html>

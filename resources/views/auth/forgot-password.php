@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?= e(str_replace('_', '-', app()->getLocale())) ?>">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -65,26 +65,26 @@
             <h1>Forgot Password?</h1>
             <p class="subtitle">Enter your email address and we'll send you a password reset link.</p>
 
-            @if (session('status'))
-                <div class="form-message" role="status">{{ session('status') }}</div>
-            @endif
+            <?php if (session('status')) { ?>
+                <div class="form-message" role="status"><?= e(session('status')) ?></div>
+            <?php } ?>
 
-            @if ($errors->any())
+            <?php if ($errors->any()) { ?>
                 <div class="form-message" role="alert">
-                    @foreach ($errors->all() as $error)
-                        <div>{{ $error }}</div>
-                    @endforeach
+                    <?php foreach ($errors->all() as $error) { ?>
+                        <div><?= e($error) ?></div>
+                    <?php } ?>
                 </div>
-            @endif
+            <?php } ?>
 
-            <form method="POST" action="{{ route('password.email') }}">
-                @csrf
+            <form method="POST" action="<?= e(route('password.email')) ?>">
+                <?= csrf_field() ?>
                 <label for="email">Email Address</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Email Address" autocomplete="email" required autofocus>
+                <input id="email" type="email" name="email" value="<?= e(old('email')) ?>" placeholder="Email Address" autocomplete="email" required autofocus>
                 <button type="submit">Send Reset Link</button>
             </form>
 
-            <a href="{{ route('login') }}">Back to Login</a>
+            <a href="<?= e(route('login')) ?>">Back to Login</a>
         </main>
     </body>
 </html>

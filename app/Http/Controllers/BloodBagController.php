@@ -8,6 +8,7 @@ use App\Models\BloodBag;
 use App\Models\Donor;
 use App\Services\BloodBankService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BloodBagController extends Controller
@@ -51,6 +52,15 @@ class BloodBagController extends Controller
         $bag = $this->bloodBankService->createBloodBag($request->validated());
 
         return response()->json($bag->load('donor'), 201);
+    }
+
+    public function storeFromDashboard(StoreBloodBagRequest $request): RedirectResponse
+    {
+        $bag = $this->bloodBankService->createBloodBag($request->validated());
+
+        return redirect()
+            ->route('dashboard')
+            ->with('status', "Donation recorded as blood bag {$bag->blood_bag_code}.");
     }
 
     public function update(UpdateBloodBagRequest $request, int $bloodBag): JsonResponse
